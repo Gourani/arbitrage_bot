@@ -1,0 +1,9 @@
+pip install -r requirements.txt
+
+run : 
+
+python bot.py
+
+or you can run  the script with specific parameters:
+
+python bot.py --paper_trading=false --withdraw_fee=5.0 --post_processing=true --slippage_threshold=1.0 --unit_profit=BTC --profit_percentage=2.5 --loss_percentage=1.0
