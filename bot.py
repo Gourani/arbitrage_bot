@@ -1,3 +1,4 @@
+from logging.handlers import TimedRotatingFileHandler
 import time
 import argparse
 from modules.trade_execution import bot
@@ -6,14 +7,17 @@ import os
 
 # Create log directory
 log_directory = 'logs'
+
 if not os.path.exists(log_directory):
     os.makedirs(log_directory)
 
 # Configure logging
 log_filename = time.strftime("%Y-%m-%d_%H-%M-%S") + "_arbitrage_bot.log"
 log_file_path = os.path.join(log_directory, log_filename)
+handler = TimedRotatingFileHandler(log_filename, when="H", interval=1, backupCount=0)
 
 logging.basicConfig(
+    handlers=[handler],
     filename=log_file_path,
     level=logging.INFO,  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
     format='%(asctime)s - %(levelname)s - %(message)s'
