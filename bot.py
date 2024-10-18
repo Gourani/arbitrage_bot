@@ -1,16 +1,38 @@
 import time
 import argparse
 from modules.trade_execution import bot
+import logging
+import os
+
+# Create log directory
+log_directory = 'logs'
+if not os.path.exists(log_directory):
+    os.makedirs(log_directory)
+
+# Configure logging
+log_filename = time.strftime("%Y-%m-%d_%H-%M-%S") + "_arbitrage_bot.log"
+log_file_path = os.path.join(log_directory, log_filename)
+
+logging.basicConfig(
+    filename=log_file_path,
+    level=logging.INFO,  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+
 
 wait_time = 5
 
 def main(paper_trading, withdraw_fee, post_processing, slippage_tolerance, unit_profit, profit_percentage, loss_percentage):
-    print(f"Starting bot with paper_trading={paper_trading}, withdraw_fee={withdraw_fee}, post_processing={post_processing}, slippage_tolerance={slippage_tolerance}, unit_profit={unit_profit}, profit_percentage={profit_percentage}, loss_percentage={loss_percentage}")
+   # print(f"Starting bot with paper_trading={paper_trading}, withdraw_fee={withdraw_fee}, post_processing={post_processing}, slippage_tolerance={slippage_tolerance}, unit_profit={unit_profit}, profit_percentage={profit_percentage}, loss_percentage={loss_percentage}")
+    logging.info(f"Starting bot with paper_trading={paper_trading}, withdraw_fee={withdraw_fee}, post_processing={post_processing}, slippage_tolerance={slippage_tolerance}, unit_profit={unit_profit}, profit_percentage={profit_percentage}, loss_percentage={loss_percentage}")
+
     while True:
         try:
             bot(paper_trading=paper_trading, withdraw_fee=withdraw_fee, post_processing=post_processing, slippage_tolerance=slippage_tolerance, unit_profit=unit_profit, profit_percentage_m=profit_percentage, loss_percentage=loss_percentage)
         except Exception as e:
-            print("Exception: ", e)
+          #  print("Exception: ", e)
+            logging.exception("Exception occurred: %s", e)
         time.sleep(wait_time)
 
 if __name__ == '__main__':

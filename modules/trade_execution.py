@@ -1,3 +1,4 @@
+import logging
 import time
 from modules.exchanges import get_exchanges
 from modules.symbols import get_order_sizes, get_symbols
@@ -24,42 +25,52 @@ def execute_trade(symbol, order_size, min_exchange, min_price, max_exchange, max
         current_min_price = ticker['ask']  # Buy at ask price
 
         if not is_slippage_acceptable(min_price, current_min_price):
-            print(f"Slippage too high on buy order: Expected {min_price}, Got {current_min_price}")
+            # print(f"Slippage too high on buy order: Expected {min_price}, Got {current_min_price}")
+            logging.warning(f"Slippage too high on buy order: Expected {min_price}, Got {current_min_price}")
+
             return
 
         # Execute the buy order if slippage is acceptable
         min_exchange.create_limit_buy_order(symbol, order_size, current_min_price)
-        print(f"Bought {symbol} on {min_exchange.id} at {current_min_price}")
+        # print(f"Bought {symbol} on {min_exchange.id} at {current_min_price}")
+        logging.info(f"Bought {symbol} on {min_exchange.id} at {current_min_price}")
 
         # Step 2: Transfer the asset to max_exchange
         withdraw_address = max_exchange.fetch_deposit_address(symbol)
         withdraw_tx = min_exchange.withdraw(symbol, order_size, withdraw_address['address'])
-        print(f"Transferred {symbol} from {min_exchange.id} to {max_exchange.id}. Transaction: {withdraw_tx}")
+        # print(f"Transferred {symbol} from {min_exchange.id} to {max_exchange.id}. Transaction: {withdraw_tx}")
+        logging.info(f"Transferred {symbol} from {min_exchange.id} to {max_exchange.id}. Transaction: {withdraw_tx}")
 
         # Wait for the transfer to complete
         while True:
             balance = max_exchange.fetch_balance()
             if balance[symbol]['free'] >= order_size:
                 break
-            print(f"Waiting for {symbol} to arrive on {max_exchange.id}...")
+            # print(f"Waiting for {symbol} to arrive on {max_exchange.id}...")
+            logging.info(f"Waiting for {symbol} to arrive on {max_exchange.id}...")
 
         # Step 3: Fetch current sell price and compare with max_price
         ticker = max_exchange.fetch_ticker(symbol)
         current_max_price = ticker['bid']  # Sell at bid price
 
         if not is_slippage_acceptable(max_price, current_max_price):
-            print(f"Slippage too high on sell order: Expected {max_price}, Got {current_max_price}")
+            # print(f"Slippage too high on sell order: Expected {max_price}, Got {current_max_price}")
+            logging.warning(f"Slippage too high on sell order: Expected {min_price}, Got {current_min_price}")
+
             return
 
         # Execute the sell order if slippage is acceptable
         sell_max = max_exchange.create_limit_sell_order(symbol, order_size, current_max_price)
-        print(f"Sold {symbol} on {max_exchange.id} at {current_max_price}")
+        # print(f"Sold {symbol} on {max_exchange.id} at {current_max_price}")
+        logging.info(f"Sold {symbol} on {max_exchange.id} at {current_max_price}")
 
         # Optional: Post-processing step to transfer profit back
         handle_post_trade(min_exchange, max_exchange, sell_max, order_size,unit_profit, post_processing)
 
     else:
-        print("Paper trading mode. No real transactions executed.")
+        # print("Paper trading mode. No real transactions executed.")
+        logging.info("Paper trading mode. No real transactions executed.")
+
 
 
 def handle_post_trade(min_exchange, max_exchange, sell_max, order_size,unit_profit='USDT',post_processing = False):
@@ -68,7 +79,9 @@ def handle_post_trade(min_exchange, max_exchange, sell_max, order_size,unit_prof
         profit_amount = sell_max['info']['executedQty'] * max_exchange.fetch_ticker(order_size)['last']
         withdraw_address_min = min_exchange.fetch_deposit_address(unit_profit)  # Assuming profit is in USDT
         max_exchange.withdraw(unit_profit, profit_amount, withdraw_address_min['address'])
-        print(f"Transferred profit from {max_exchange.id} back to {min_exchange.id}")
+        # print(f"Transferred profit from {max_exchange.id} back to {min_exchange.id}")
+        logging.info(f"Transferred profit from {max_exchange.id} back to {min_exchange.id}")
+
 
 def find_best_arbitrage(symbol, exchanges, prices, order_size):
     """Find the best exchanges to perform arbitrage."""
@@ -101,9 +114,15 @@ def bot(paper_trading,withdraw_fee,post_processing,slippage_tolerance, unit_prof
         profit, profit_percentage = calculate_profit(min_price, max_price, order_size, min_fee, max_fee,withdraw_fee)
 
         if profit_percentage >= profit_percentage_m:
-            print(f"{ms} {symbol} profit: {profit}. Buy {min_exchange.id} at {min_price}, Sell {max_exchange.id} at {max_price}")
+            # print(f"{ms} {symbol} profit: {profit}. Buy {min_exchange.id} at {min_price}, Sell {max_exchange.id} at {max_price}")
+            logging.info(f"{ms} {symbol} profit: {profit}. Buy {min_exchange.id} at {min_price}, Sell {max_exchange.id} at {max_price}")
+
             execute_trade(symbol, order_size, min_exchange, min_price, max_exchange, max_price, paper_trading,post_processing,unit_profit,slippage_tolerance)
         elif profit_percentage <= -loss_percentage:
-            print(f"{symbol} potential loss exceeds 10%. Skipping trade. Profit percentage: {profit_percentage}%")
+            # print(f"{symbol} potential loss exceeds 10%. Skipping trade. Profit percentage: {profit_percentage}%")
+            logging.warning(f"{symbol} potential loss exceeds {loss_percentage}%. Skipping trade. Profit percentage: {profit_percentage}%")
+
         else:
-            print(f"{ms} {symbol} no profitable arbitrage opportunity. Profit percentage: {profit_percentage}%")
+            # print(f"{ms} {symbol} no profitable arbitrage opportunity. Profit percentage: {profit_percentage}%")
+            logging.info(f"{ms} {symbol} no profitable arbitrage opportunity. Profit percentage: {profit_percentage}%")
+
